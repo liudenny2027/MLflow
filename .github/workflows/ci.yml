@@ -53,7 +53,14 @@ jobs:
       - name: Install dependencies from wheelhouse
         run: |
           python -m pip install --upgrade pip
-          pip install --no-index --find-links wheelhouse -r requirements.txt
+          # If wheelhouse exists and contains wheels, install from it.
+          # Otherwise, fall back to installing from PyPI so packages like
+          # `mlflow` that may not have been built into wheelhouse are fetched.
+          if [ -d wheelhouse ] && [ "$(ls -A wheelhouse)" ]; then
+            pip install --no-index --find-links wheelhouse -r requirements.txt || pip install -r requirements.txt
+          else
+            pip install -r requirements.txt
+          fi
 
       - name: Start MLflow UI in background
         run: |
