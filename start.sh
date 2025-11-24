@@ -2,7 +2,7 @@
 set -e
 
 # 先运行训练脚本
-echo "Starting training with python train.py..."
+echo "Starting training with python train.py now"
 python train.py
 
 # 训练结束后启动 MLflow UI，绑定所有地址以便外部访问
