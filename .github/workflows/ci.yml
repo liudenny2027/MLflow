@@ -37,23 +37,9 @@ jobs:
           else
             pip install -r requirements.txt
           fi
-
-      - name: Start MLflow UI in background
-        run: |
-          python -m mlflow ui --host 127.0.0.1 --port 5000 > mlflow-ui.log 2>&1 &
-          echo $! > mlflow.pid
-          sleep 3
-
       - name: Run training
         run: |
           python train.py
-
-      - name: Stop MLflow UI
-        if: always()
-        run: |
-          if [ -f mlflow.pid ]; then
-            kill $(cat mlflow.pid) || true
-          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -62,3 +48,16 @@ jobs:
           path: |
             mlruns
             mlflow-ui.log
+
+      - name: Start MLflow UI in background
+        run: |
+          python -m mlflow ui --host 127.0.0.1 --port 5000 > mlflow-ui.log 2>&1 &
+          echo $! > mlflow.pid
+          sleep 3
+
+      - name: Stop MLflow UI
+        if: always()
+        run: |
+          if [ -f mlflow.pid ]; then
+            kill $(cat mlflow.pid) || true
+          fi
