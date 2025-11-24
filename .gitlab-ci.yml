@@ -1,0 +1,46 @@
+# Minimal GitLab CI for the MLflow example
+
+stages:
+  - prepare
+  - run
+
+default:
+  image: python:3.11-bullseye
+  before_script:
+    - python -m pip install --upgrade pip
+
+# Prepare: install build tools and build wheels into wheelhouse
+prepare:
+  stage: prepare
+  script:
+    - apt-get update && apt-get install -y build-essential --no-install-recommends && rm -rf /var/lib/apt/lists/*
+    - mkdir -p wheelhouse
+    - pip wheel --wheel-dir wheelhouse -r requirements.txt
+  artifacts:
+    paths:
+      - wheelhouse/
+    expire_in: 1 week
+
+# Run: install from wheelhouse, start mlflow ui in background, run training, then stop UI
+run:
+  stage: run
+  dependencies:
+    - prepare
+  script:
+    - pip install --no-index --find-links wheelhouse -r requirements.txt
+    - |
+      echo "Starting MLflow UI in background..."
+      python -m mlflow ui --host 127.0.0.1 --port 5000 > mlflow-ui.log 2>&1 &
+      MLFLOW_PID=$!
+      echo "MLflow UI PID=$MLFLOW_PID"
+      sleep 3
+    - echo "Running training..."
+    - python train.py
+    - echo "Stopping MLflow UI (PID=$MLFLOW_PID)"
+    - kill $MLFLOW_PID || true
+    - wait $MLFLOW_PID 2>/dev/null || true
+  artifacts:
+    paths:
+      - mlruns/
+      - mlflow-ui.log
+    expire_in: 1 week
